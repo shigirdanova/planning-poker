@@ -2,9 +2,7 @@
 
 Share a room link, vote with Fibonacci cards, reveal estimates together.
 
-Live: https://shigirdanova.github.io/planning-poker/
-
-Everyone who opens the same room link sees the same players, topic, and votes.
+No accounts. Enter a name, create a room, send the URL. The Node server keeps the room in memory and syncs votes over Socket.io.
 
 ## Local
 
@@ -17,4 +15,14 @@ Open http://localhost:5173, create a room, copy the link, and open it in another
 
 ## Deploy
 
-A push to `main` builds the site and publishes it to GitHub Pages.
+One process serves the UI and the WebSocket server. Easiest host: [Render](https://render.com).
+
+1. New → Web Service → this GitHub repo.
+2. Runtime: Docker (uses the included `Dockerfile`).
+3. After deploy, share `https://<your-service>.onrender.com` with the team.
+
+The free plan spins the service down after idle time; the first request may take ~30 seconds. Rooms are lost on restart.
+
+## GitHub Pages
+
+Do not use GitHub Pages for this version. Pages cannot run the backend, so teammates would not share one room.
