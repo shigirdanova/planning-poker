@@ -9,11 +9,12 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "mqtt": "^5.14.0",
     "nanoid": "^5.1.5",
     "react": "^19.1.1",
     "react-dom": "^19.1.1",
-    "react-router-dom": "^7.8.0"
+    "react-router-dom": "^7.8.0",
+    "y-websocket": "^3.1.0",
+    "yjs": "^13.6.32"
   },
   "devDependencies": {
     "@types/node": "^24.2.1",

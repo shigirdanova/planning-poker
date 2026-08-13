@@ -22,8 +22,8 @@ export default function Home() {
       <p className="brand">Planning poker</p>
       <h1>Estimate together without peeking</h1>
       <p className="lead">
-        Create a room, share the link, pick a card. Votes stay hidden until you
-        reveal them.
+        Create a room, copy the link, and send it to the team. Everyone who opens
+        that link joins the same room and sees the same votes.
       </p>
       <div className="panel">
         <div className="row">

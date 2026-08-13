@@ -2,6 +2,7 @@ import { useMemo, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { CARDS } from "../shared/types";
 import type { RoomState } from "../shared/types";
+import { roomShareUrl } from "../share";
 import { useRoomSync } from "../sync";
 
 function stats(room: RoomState) {
@@ -44,7 +45,7 @@ export default function Room() {
   }
 
   async function copyLink() {
-    await navigator.clipboard.writeText(window.location.href);
+    await navigator.clipboard.writeText(roomShareUrl(roomId));
     setCopied(true);
     window.setTimeout(() => setCopied(false), 1500);
   }
@@ -115,6 +116,7 @@ export default function Room() {
         ) : (
           <span>
             {votedCount}/{sync.room?.players.length ?? 0} voted
+            {sync.status === "online" ? " · live" : ""}
           </span>
         )}
       </div>

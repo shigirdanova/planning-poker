@@ -4,7 +4,7 @@ Share a room link, vote with Fibonacci cards, reveal estimates together.
 
 Live: https://shigirdanova.github.io/planning-poker/
 
-Static app on GitHub Pages. Rooms sync over a public MQTT broker, so there is no custom server.
+Everyone who opens the same room link sees the same players, topic, and votes.
 
 ## Local
 
@@ -13,7 +13,7 @@ npm install
 npm run dev
 ```
 
-Open http://localhost:5173, create a room, and open the same link in another window.
+Open http://localhost:5173, create a room, copy the link, and open it in another window.
 
 ## Deploy
 

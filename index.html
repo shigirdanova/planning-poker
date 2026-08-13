@@ -13,6 +13,15 @@
   </head>
   <body>
     <div id="root"></div>
+    <script>
+      (function () {
+        var match = location.pathname.match(/\/r\/([^/]+)\/?$/);
+        if (match && !location.hash) {
+          var root = location.pathname.slice(0, location.pathname.lastIndexOf("/r/"));
+          location.replace(root + "/#/r/" + encodeURIComponent(match[1]) + location.search);
+        }
+      })();
+    </script>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>
