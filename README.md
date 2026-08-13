@@ -2,27 +2,33 @@
 
 Share a room link, vote with Fibonacci cards, reveal estimates together.
 
-No accounts. Enter a name, create a room, send the URL. The Node server keeps the room in memory and syncs votes over Socket.io.
+No accounts. Enter a name, create a room, send the URL. The server keeps the room in memory and syncs votes over Socket.io. When everyone has voted, cards open on their own.
 
 ## Local
 
 ```bash
+cp .env.example .env   # optional: add LINEAR_API_KEY
 npm install
 npm run dev
 ```
 
-Open http://localhost:5173, create a room, copy the link, and open it in another window.
+Open http://localhost:5173
+
+## Linear
+
+Set `LINEAR_API_KEY` to a Linear personal API key (Settings → API). Then in a room paste `CAT-123` or a Linear URL and pull the issue. After reveal, save the median numeric vote back to the issue estimate field.
+
+## Google Meet
+
+There is no Marketplace add-on. Use **Compact layout for Meet** (or **Meet layout** in a room) and open that URL in a split view next to the call. The server allows the page to be framed from `meet.google.com`.
 
 ## Deploy
 
-One process serves the UI and the WebSocket server. Easiest host: [Render](https://render.com).
+One process serves the UI and WebSocket server. Easiest host: [Render](https://render.com).
 
 1. New → Web Service → this GitHub repo.
-2. Runtime: Docker (uses the included `Dockerfile`).
-3. After deploy, share `https://<your-service>.onrender.com` with the team.
+2. Runtime: Docker.
+3. Add `LINEAR_API_KEY` if you want issue sync.
+4. Share `https://<your-service>.onrender.com`.
 
-The free plan spins the service down after idle time; the first request may take ~30 seconds. Rooms are lost on restart.
-
-## GitHub Pages
-
-Do not use GitHub Pages for this version. Pages cannot run the backend, so teammates would not share one room.
+Rooms are lost on restart. The free plan may sleep when idle.

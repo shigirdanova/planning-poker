@@ -7,6 +7,7 @@ export function useRoomSync(roomId: string, name: string, enabled: boolean) {
   const [room, setRoom] = useState<RoomState | null>(null);
   const [myVote, setMyVote] = useState<string | null>(null);
   const [status, setStatus] = useState<"connecting" | "online" | "error">("connecting");
+  const [notice, setNotice] = useState("");
 
   useEffect(() => {
     if (!enabled || !roomId) return;
@@ -20,13 +21,14 @@ export function useRoomSync(roomId: string, name: string, enabled: boolean) {
     });
     socket.on("disconnect", () => setStatus("connecting"));
     socket.on("connect_error", () => setStatus("error"));
+    socket.on("notice", (message: string) => setNotice(message));
     socket.on("room", (state: RoomState) => {
+      setNotice("");
       setRoom(state);
       const me = state.players.find((player) => player.id === socket.id);
       if (state.revealed) return;
       if (!me?.hasVoted) setMyVote(null);
     });
-    socket.on("error", () => setStatus("error"));
 
     return () => {
       socket.disconnect();
@@ -38,6 +40,7 @@ export function useRoomSync(roomId: string, name: string, enabled: boolean) {
     room,
     myVote,
     status,
+    notice,
     setTopic(topic: string) {
       socketRef.current?.emit("topic", topic);
     },
@@ -52,6 +55,14 @@ export function useRoomSync(roomId: string, name: string, enabled: boolean) {
     newRound() {
       setMyVote(null);
       socketRef.current?.emit("new-round");
+    },
+    pullLinear(query: string) {
+      setNotice("");
+      socketRef.current?.emit("pull-linear", query);
+    },
+    saveLinear() {
+      setNotice("");
+      socketRef.current?.emit("save-linear");
     },
   };
 }

@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
-import { Link, useParams } from "react-router-dom";
+import { Link, useParams, useSearchParams } from "react-router-dom";
+import { consensus } from "../shared/consensus";
 import { CARDS } from "../shared/types";
 import type { RoomState } from "../shared/types";
 import { roomShareUrl } from "../share";
@@ -21,14 +22,21 @@ function stats(room: RoomState) {
 
 export default function Room() {
   const { roomId = "" } = useParams();
+  const [params] = useSearchParams();
+  const panel = params.get("panel") === "1";
   const [name, setName] = useState(() => sessionStorage.getItem("pp-name") ?? "");
   const [joined, setJoined] = useState(false);
-  const [copied, setCopied] = useState(false);
+  const [copied, setCopied] = useState<"link" | "call" | "">("");
   const [error, setError] = useState("");
+  const [linearQuery, setLinearQuery] = useState("");
   const sync = useRoomSync(roomId, name.trim(), joined);
 
   const summary = useMemo(
     () => (sync.room?.revealed ? stats(sync.room) : null),
+    [sync.room],
+  );
+  const points = useMemo(
+    () => (sync.room?.revealed ? consensus(sync.room.players.map((p) => p.vote)) : null),
     [sync.room],
   );
   const votedCount = sync.room?.players.filter((p) => p.hasVoted).length ?? 0;
@@ -44,18 +52,18 @@ export default function Room() {
     setError("");
   }
 
-  async function copyLink() {
-    await navigator.clipboard.writeText(roomShareUrl(roomId));
-    setCopied(true);
-    window.setTimeout(() => setCopied(false), 1500);
+  async function copy(kind: "link" | "call") {
+    await navigator.clipboard.writeText(roomShareUrl(roomId, kind === "call"));
+    setCopied(kind);
+    window.setTimeout(() => setCopied(""), 1500);
   }
 
   if (!joined) {
     return (
-      <div className="shell name-gate">
-        <p className="brand">Room {roomId}</p>
+      <div className={panel ? "shell name-gate panel" : "shell name-gate"}>
+        <p className="brand">{panel ? "Call room" : `Room ${roomId}`}</p>
         <h1>What should we call you?</h1>
-        <div className="panel">
+        <div className="panel-box">
           <div className="row">
             <input
               type="text"
@@ -78,27 +86,64 @@ export default function Room() {
   }
 
   return (
-    <div className="shell">
+    <div className={panel ? "shell panel" : "shell"}>
       <div className="toolbar">
         <div className="nav">
-          <p className="brand">Planning poker</p>
-          <Link to="/">New room</Link>
+          <p className="brand">{panel ? "Call" : "Planning poker"}</p>
+          {!panel ? <Link to="/">New room</Link> : null}
         </div>
-        <button type="button" className="secondary" onClick={() => void copyLink()}>
-          {copied ? "Copied" : "Copy link"}
-        </button>
+        <div className="row">
+          <button type="button" className="secondary" onClick={() => void copy("link")}>
+            {copied === "link" ? "Copied" : "Copy link"}
+          </button>
+          {!panel ? (
+            <button type="button" className="secondary" onClick={() => void copy("call")}>
+              {copied === "call" ? "Copied" : "Meet layout"}
+            </button>
+          ) : null}
+        </div>
       </div>
+
+      {sync.room?.issue ? (
+        <a className="issue" href={sync.room.issue.url} target="_blank" rel="noreferrer">
+          <span>{sync.room.issue.identifier}</span>
+          {sync.room.issue.title}
+        </a>
+      ) : null}
 
       <input
         className="topic"
         type="text"
-        placeholder="What are we estimating? e.g. CAT-123 login"
+        placeholder="What are we estimating?"
         value={sync.room?.topic ?? ""}
         maxLength={200}
         onChange={(e) => sync.setTopic(e.target.value)}
       />
 
+      {sync.room?.linearReady ? (
+        <form
+          className="row ticket-row"
+          onSubmit={(e) => {
+            e.preventDefault();
+            if (!linearQuery.trim()) return;
+            sync.pullLinear(linearQuery.trim());
+            setLinearQuery("");
+          }}
+        >
+          <input
+            type="text"
+            placeholder="CAT-123 or Linear URL"
+            value={linearQuery}
+            onChange={(e) => setLinearQuery(e.target.value)}
+          />
+          <button type="submit" className="secondary">
+            Pull issue
+          </button>
+        </form>
+      ) : null}
+
       {sync.status !== "online" ? <p className="hint">Connecting…</p> : null}
+      {sync.notice ? <p className="error">{sync.notice}</p> : null}
 
       <div className="meta">
         {summary ? (
@@ -142,11 +187,23 @@ export default function Room() {
           onClick={() => sync.reveal()}
           disabled={!sync.room || sync.room.revealed || votedCount === 0}
         >
-          Reveal cards
+          Reveal
         </button>
         <button type="button" className="secondary" onClick={() => sync.newRound()}>
-          New round
+          Next round
         </button>
+        {sync.room?.issue && points !== null && sync.room.revealed ? (
+          <button
+            type="button"
+            className="secondary"
+            onClick={() => sync.saveLinear()}
+            disabled={sync.room.issue.savedEstimate === points}
+          >
+            {sync.room.issue.savedEstimate === points
+              ? `Saved ${points} in Linear`
+              : `Save ${points} to Linear`}
+          </button>
+        ) : null}
       </div>
 
       <div className="cards">

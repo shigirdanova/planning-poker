@@ -70,7 +70,8 @@ h1 {
   color: var(--muted);
 }
 
-.panel {
+.panel,
+.panel-box {
   display: flex;
   flex-direction: column;
   gap: 10px;
@@ -275,4 +276,53 @@ button:disabled {
   margin: 0;
   color: var(--muted);
   font-size: 14px;
+}
+
+.meet-hint {
+  margin-top: 20px;
+}
+
+.ticket-row {
+  margin: 0 0 18px;
+}
+
+.issue {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 8px;
+  color: var(--ink);
+  font-size: 13px;
+}
+
+.issue span {
+  padding: 2px 7px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  color: var(--muted);
+}
+
+.shell.panel {
+  max-width: 380px;
+  padding: 12px 12px 24px;
+}
+
+.shell.panel .toolbar {
+  margin-bottom: 16px;
+}
+
+.shell.panel .topic {
+  font-size: 18px;
+  margin-bottom: 12px;
+}
+
+.shell.panel .card {
+  width: 42px;
+  height: 50px;
+  font-size: 15px;
+}
+
+.shell.panel .player {
+  min-width: 0;
+  flex: 1 1 100%;
 }

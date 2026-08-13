@@ -3,12 +3,15 @@ import { createServer } from "node:http";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { Server } from "socket.io";
+import { linearConfigured, lookupIssue, saveEstimate } from "./linear.ts";
 import {
   createRoom,
+  everyoneVoted,
   findRoomByPlayer,
   getRoom,
   joinRoom,
   leaveRoom,
+  roomConsensus,
   toState,
 } from "./rooms.ts";
 
@@ -17,9 +20,20 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 
 const app = express();
 app.use(express.json());
+app.use((_req, res, next) => {
+  res.setHeader(
+    "Content-Security-Policy",
+    "frame-ancestors 'self' https://meet.google.com https://*.meet.google.com https://*.google.com",
+  );
+  next();
+});
 
 app.get("/api/health", (_req, res) => {
   res.json({ ok: true });
+});
+
+app.get("/api/linear/status", (_req, res) => {
+  res.json({ configured: linearConfigured() });
 });
 
 app.post("/api/rooms", (_req, res) => {
@@ -57,11 +71,18 @@ function emitRoom(roomId: string): void {
   io.to(roomId).emit("room", toState(room));
 }
 
+function resetVotes(roomId: string): void {
+  const room = getRoom(roomId);
+  if (!room) return;
+  room.revealed = false;
+  for (const player of room.players.values()) player.vote = null;
+}
+
 io.on("connection", (socket) => {
   socket.on("join", ({ roomId, name }: { roomId: string; name: string }) => {
     const trimmed = (name ?? "").trim().slice(0, 40);
     if (!trimmed) {
-      socket.emit("error", "Enter your name");
+      socket.emit("notice", "Enter your name");
       return;
     }
     const room = joinRoom(roomId, socket.id, trimmed);
@@ -82,6 +103,7 @@ io.on("connection", (socket) => {
     const player = room.players.get(socket.id);
     if (!player) return;
     player.vote = player.vote === value ? null : String(value).slice(0, 8);
+    if (everyoneVoted(room)) room.revealed = true;
     emitRoom(room.id);
   });
 
@@ -95,9 +117,39 @@ io.on("connection", (socket) => {
   socket.on("new-round", () => {
     const room = findRoomByPlayer(socket.id);
     if (!room) return;
-    room.revealed = false;
-    for (const player of room.players.values()) player.vote = null;
+    resetVotes(room.id);
     emitRoom(room.id);
+  });
+
+  socket.on("pull-linear", async (query: string) => {
+    const room = findRoomByPlayer(socket.id);
+    if (!room) return;
+    try {
+      const issue = await lookupIssue(String(query ?? ""));
+      room.issue = { ...issue, savedEstimate: null };
+      room.topic = `${issue.identifier} · ${issue.title}`.slice(0, 200);
+      resetVotes(room.id);
+      emitRoom(room.id);
+    } catch (err) {
+      socket.emit("notice", err instanceof Error ? err.message : "Could not load Linear issue");
+    }
+  });
+
+  socket.on("save-linear", async () => {
+    const room = findRoomByPlayer(socket.id);
+    if (!room?.issue || !room.revealed) return;
+    const estimate = roomConsensus(room);
+    if (estimate === null) {
+      socket.emit("notice", "Need a numeric vote to save");
+      return;
+    }
+    try {
+      await saveEstimate(room.issue.issueId, estimate);
+      room.issue = { ...room.issue, savedEstimate: estimate };
+      emitRoom(room.id);
+    } catch (err) {
+      socket.emit("notice", err instanceof Error ? err.message : "Could not save to Linear");
+    }
   });
 
   socket.on("disconnect", () => {

@@ -1,5 +1,7 @@
 import { nanoid } from "nanoid";
-import type { RoomState } from "../src/shared/types.ts";
+import { consensus } from "../src/shared/consensus.ts";
+import type { LinkedIssue, RoomState } from "../src/shared/types.ts";
+import { linearConfigured } from "./linear.ts";
 
 type Player = {
   id: string;
@@ -12,6 +14,7 @@ type Room = {
   topic: string;
   revealed: boolean;
   players: Map<string, Player>;
+  issue: LinkedIssue | null;
 };
 
 const rooms = new Map<string, Room>();
@@ -22,6 +25,7 @@ export function createRoom(id = nanoid(8)): Room {
     topic: "",
     revealed: false,
     players: new Map(),
+    issue: null,
   };
   rooms.set(id, room);
   return room;
@@ -51,11 +55,22 @@ export function findRoomByPlayer(playerId: string): Room | undefined {
   return undefined;
 }
 
+export function everyoneVoted(room: Room): boolean {
+  if (room.players.size === 0) return false;
+  return [...room.players.values()].every((player) => player.vote !== null);
+}
+
+export function roomConsensus(room: Room): number | null {
+  return consensus([...room.players.values()].map((player) => player.vote));
+}
+
 export function toState(room: Room): RoomState {
   return {
     id: room.id,
     topic: room.topic,
     revealed: room.revealed,
+    issue: room.issue,
+    linearReady: linearConfigured(),
     players: [...room.players.values()].map((player) => ({
       id: player.id,
       name: player.name,

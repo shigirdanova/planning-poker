@@ -7,9 +7,19 @@ export type PlayerView = {
   vote: string | null;
 };
 
+export type LinkedIssue = {
+  issueId: string;
+  identifier: string;
+  title: string;
+  url: string;
+  savedEstimate: number | null;
+};
+
 export type RoomState = {
   id: string;
   topic: string;
   revealed: boolean;
   players: PlayerView[];
+  issue: LinkedIssue | null;
+  linearReady: boolean;
 };
