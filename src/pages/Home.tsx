@@ -10,7 +10,7 @@ export default function Home() {
   function createRoom() {
     const trimmed = name.trim();
     if (!trimmed) {
-      setError("Введите имя — так вас увидят в комнате");
+      setError("Enter your name so the team can see you in the room");
       return;
     }
     sessionStorage.setItem("pp-name", trimmed);
@@ -20,16 +20,16 @@ export default function Home() {
   return (
     <div className="shell">
       <p className="brand">Planning poker</p>
-      <h1>Оцените задачу вместе, не подглядывая</h1>
+      <h1>Estimate together without peeking</h1>
       <p className="lead">
-        Создайте комнату, скиньте ссылку команде, выберите карту. Оценки откроются
-        одновременно.
+        Create a room, share the link, pick a card. Votes stay hidden until you
+        reveal them.
       </p>
       <div className="panel">
         <div className="row">
           <input
             type="text"
-            placeholder="Ваше имя"
+            placeholder="Your name"
             value={name}
             maxLength={40}
             onChange={(e) => setName(e.target.value)}
@@ -38,7 +38,7 @@ export default function Home() {
             }}
           />
           <button type="button" onClick={createRoom}>
-            Создать комнату
+            Create room
           </button>
         </div>
         {error ? <p className="error">{error}</p> : null}

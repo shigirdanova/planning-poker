@@ -116,7 +116,7 @@ export function useRoomSync(roomId: string, name: string, enabled: boolean) {
         const player = JSON.parse(text) as PlayerView;
         players.set(otherId, {
           id: otherId,
-          name: String(player.name ?? "Игрок").slice(0, 40),
+          name: String(player.name ?? "Player").slice(0, 40),
           hasVoted: Boolean(player.hasVoted || player.vote),
           vote: player.vote ?? null,
         });

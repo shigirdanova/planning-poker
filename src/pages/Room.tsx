@@ -12,7 +12,7 @@ function stats(room: RoomState) {
   if (nums.length === 0) return null;
   const avg = nums.reduce((a, b) => a + b, 0) / nums.length;
   return {
-    avg: Number.isInteger(avg) ? String(avg) : avg.toFixed(1).replace(".", ","),
+    avg: Number.isInteger(avg) ? String(avg) : avg.toFixed(1),
     min: Math.min(...nums),
     max: Math.max(...nums),
   };
@@ -35,7 +35,7 @@ export default function Room() {
   function join() {
     const trimmed = name.trim();
     if (!trimmed) {
-      setError("Введите имя");
+      setError("Enter your name");
       return;
     }
     sessionStorage.setItem("pp-name", trimmed);
@@ -52,13 +52,13 @@ export default function Room() {
   if (!joined) {
     return (
       <div className="shell name-gate">
-        <p className="brand">Комната {roomId}</p>
-        <h1>Как вас представить?</h1>
+        <p className="brand">Room {roomId}</p>
+        <h1>What should we call you?</h1>
         <div className="panel">
           <div className="row">
             <input
               type="text"
-              placeholder="Ваше имя"
+              placeholder="Your name"
               value={name}
               maxLength={40}
               onChange={(e) => setName(e.target.value)}
@@ -67,7 +67,7 @@ export default function Room() {
               }}
             />
             <button type="button" onClick={join}>
-              Войти
+              Join
             </button>
           </div>
           {error ? <p className="error">{error}</p> : null}
@@ -82,34 +82,32 @@ export default function Room() {
         <div>
           <p className="brand">Planning poker</p>
           <Link to="/" style={{ color: "var(--muted)" }}>
-            Новая комната
+            New room
           </Link>
         </div>
         <button type="button" className="secondary" onClick={() => void copyLink()}>
-          {copied ? "Ссылка скопирована" : "Скопировать ссылку"}
+          {copied ? "Link copied" : "Copy link"}
         </button>
       </div>
 
       <input
         className="topic"
         type="text"
-        placeholder="Что оцениваем? Например: CAT-123 логин"
+        placeholder="What are we estimating? e.g. CAT-123 login"
         value={sync.room?.topic ?? ""}
         maxLength={200}
         onChange={(e) => sync.setTopic(e.target.value)}
       />
 
-      {sync.status !== "online" ? (
-        <p className="hint">Подключаемся к комнате…</p>
-      ) : null}
+      {sync.status !== "online" ? <p className="hint">Connecting to the room…</p> : null}
 
       {summary ? (
         <div className="stats">
           <span>
-            Среднее <b>{summary.avg}</b>
+            Average <b>{summary.avg}</b>
           </span>
           <span>
-            Разброс{" "}
+            Spread{" "}
             <b>
               {summary.min}–{summary.max}
             </b>
@@ -117,7 +115,7 @@ export default function Room() {
         </div>
       ) : (
         <p className="hint">
-          Проголосовали {votedCount} из {sync.room?.players.length ?? 0}
+          Voted {votedCount} of {sync.room?.players.length ?? 0}
         </p>
       )}
 
@@ -130,7 +128,7 @@ export default function Room() {
             ) : player.hasVoted ? (
               <div className="chip back">•</div>
             ) : (
-              <div className="chip empty">ждём</div>
+              <div className="chip empty">waiting</div>
             )}
           </div>
         ))}
@@ -142,10 +140,10 @@ export default function Room() {
           onClick={() => sync.reveal()}
           disabled={!sync.room || sync.room.revealed || votedCount === 0}
         >
-          Открыть карты
+          Reveal cards
         </button>
         <button type="button" className="secondary" onClick={() => sync.newRound()}>
-          Новый раунд
+          New round
         </button>
       </div>
 

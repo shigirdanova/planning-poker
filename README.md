@@ -1,20 +1,20 @@
 # Planning poker
 
-Комната по ссылке, Fibonacci-карты, одновременное открытие голосов.
+Share a room link, vote with Fibonacci cards, reveal estimates together.
 
-Сайт: https://shigirdanova.github.io/planning-poker/
+Live: https://shigirdanova.github.io/planning-poker/
 
-Это статическое приложение: GitHub Pages раздаёт фронт, комнаты синхронизируются через публичный MQTT-брокер. Свой сервер не нужен.
+Static app on GitHub Pages. Rooms sync over a public MQTT broker, so there is no custom server.
 
-## Локально
+## Local
 
 ```bash
 npm install
 npm run dev
 ```
 
-Откройте http://localhost:5173 — создайте комнату и откройте ту же ссылку во втором окне.
+Open http://localhost:5173, create a room, and open the same link in another window.
 
-## Деплой
+## Deploy
 
-Пуш в `main` собирает сайт и публикует его на GitHub Pages.
+A push to `main` builds the site and publishes it to GitHub Pages.
