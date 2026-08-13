@@ -18,7 +18,7 @@ export default function Home() {
   }
 
   return (
-    <div className="shell">
+    <div className="shell home">
       <p className="brand">Planning poker</p>
       <h1>Estimate together without peeking</h1>
       <p className="lead">

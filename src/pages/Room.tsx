@@ -79,14 +79,12 @@ export default function Room() {
   return (
     <div className="shell">
       <div className="toolbar">
-        <div>
+        <div className="nav">
           <p className="brand">Planning poker</p>
-          <Link to="/" style={{ color: "var(--muted)" }}>
-            New room
-          </Link>
+          <Link to="/">New room</Link>
         </div>
         <button type="button" className="secondary" onClick={() => void copyLink()}>
-          {copied ? "Link copied" : "Copy link"}
+          {copied ? "Copied" : "Copy link"}
         </button>
       </div>
 
@@ -99,42 +97,44 @@ export default function Room() {
         onChange={(e) => sync.setTopic(e.target.value)}
       />
 
-      {sync.status !== "online" ? <p className="hint">Connecting to the room…</p> : null}
+      {sync.status !== "online" ? <p className="hint">Connecting…</p> : null}
 
-      {summary ? (
-        <div className="stats">
+      <div className="meta">
+        {summary ? (
+          <>
+            <span>
+              Average <b>{summary.avg}</b>
+            </span>
+            <span>
+              Spread{" "}
+              <b>
+                {summary.min}–{summary.max}
+              </b>
+            </span>
+          </>
+        ) : (
           <span>
-            Average <b>{summary.avg}</b>
+            {votedCount}/{sync.room?.players.length ?? 0} voted
           </span>
-          <span>
-            Spread{" "}
-            <b>
-              {summary.min}–{summary.max}
-            </b>
-          </span>
-        </div>
-      ) : (
-        <p className="hint">
-          Voted {votedCount} of {sync.room?.players.length ?? 0}
-        </p>
-      )}
+        )}
+      </div>
 
       <div className="players">
         {(sync.room?.players ?? []).map((player) => (
           <div className="player" key={player.id}>
-            <strong>{player.name}</strong>
             {sync.room?.revealed ? (
               <div className="chip">{player.vote ?? "—"}</div>
             ) : player.hasVoted ? (
-              <div className="chip back">•</div>
+              <div className="chip back" aria-label="Voted" />
             ) : (
-              <div className="chip empty">waiting</div>
+              <div className="chip empty" aria-label="Waiting" />
             )}
+            <strong>{player.name}</strong>
           </div>
         ))}
       </div>
 
-      <div className="row" style={{ marginBottom: 18 }}>
+      <div className="actions">
         <button
           type="button"
           onClick={() => sync.reveal()}
