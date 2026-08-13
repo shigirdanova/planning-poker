@@ -1,0 +1,26 @@
+{
+  "name": "planning-poker",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "mqtt": "^5.14.0",
+    "nanoid": "^5.1.5",
+    "react": "^19.1.1",
+    "react-dom": "^19.1.1",
+    "react-router-dom": "^7.8.0"
+  },
+  "devDependencies": {
+    "@types/node": "^24.2.1",
+    "@types/react": "^19.1.10",
+    "@types/react-dom": "^19.1.7",
+    "@vitejs/plugin-react": "^4.7.0",
+    "typescript": "^5.9.2",
+    "vite": "^7.1.2"
+  }
+}
