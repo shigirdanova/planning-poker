@@ -58,16 +58,11 @@ input {
 }
 
 h1 {
-  margin: 0 0 10px;
+  margin: 0 0 24px;
   font-size: 32px;
   font-weight: 500;
   letter-spacing: -0.04em;
   line-height: 1.15;
-}
-
-.lead {
-  margin: 0 0 28px;
-  color: var(--muted);
 }
 
 .panel,
@@ -276,10 +271,6 @@ button:disabled {
   margin: 0;
   color: var(--muted);
   font-size: 14px;
-}
-
-.meet-hint {
-  margin-top: 20px;
 }
 
 .ticket-row {

@@ -11,6 +11,7 @@ type Player = {
 
 type Room = {
   id: string;
+  title: string;
   topic: string;
   revealed: boolean;
   players: Map<string, Player>;
@@ -19,9 +20,11 @@ type Room = {
 
 const rooms = new Map<string, Room>();
 
-export function createRoom(id = nanoid(8)): Room {
+export function createRoom(opts: { id?: string; title?: string } = {}): Room {
+  const id = opts.id ?? nanoid(8);
   const room: Room = {
     id,
+    title: (opts.title ?? "").trim().slice(0, 60),
     topic: "",
     revealed: false,
     players: new Map(),
@@ -36,7 +39,7 @@ export function getRoom(id: string): Room | undefined {
 }
 
 export function joinRoom(roomId: string, playerId: string, name: string): Room {
-  const room = rooms.get(roomId) ?? createRoom(roomId);
+  const room = rooms.get(roomId) ?? createRoom({ id: roomId });
   room.players.set(playerId, { id: playerId, name, vote: null });
   return room;
 }
@@ -67,6 +70,7 @@ export function roomConsensus(room: Room): number | null {
 export function toState(room: Room): RoomState {
   return {
     id: room.id,
+    title: room.title,
     topic: room.topic,
     revealed: room.revealed,
     issue: room.issue,

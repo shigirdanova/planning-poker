@@ -36,9 +36,14 @@ app.get("/api/linear/status", (_req, res) => {
   res.json({ configured: linearConfigured() });
 });
 
-app.post("/api/rooms", (_req, res) => {
-  const room = createRoom();
-  res.json({ id: room.id });
+app.post("/api/rooms", (req, res) => {
+  const title = String(req.body?.name ?? "").trim().slice(0, 60);
+  if (!title) {
+    res.status(400).json({ error: "Enter a room name" });
+    return;
+  }
+  const room = createRoom({ title });
+  res.json({ id: room.id, title: room.title });
 });
 
 app.get("/api/rooms/:id", (req, res) => {
@@ -47,7 +52,7 @@ app.get("/api/rooms/:id", (req, res) => {
     res.status(404).json({ error: "Room not found" });
     return;
   }
-  res.json({ id: room.id });
+  res.json({ id: room.id, title: room.title });
 });
 
 if (process.env.NODE_ENV === "production") {
@@ -69,6 +74,29 @@ function emitRoom(roomId: string): void {
   const room = getRoom(roomId);
   if (!room) return;
   io.to(roomId).emit("room", toState(room));
+}
+
+async function saveLinearIfReady(
+  roomId: string,
+  opts?: { requireEstimate?: boolean; onError?: (message: string) => void },
+): Promise<void> {
+  const room = getRoom(roomId);
+  if (!room?.issue || !room.revealed) return;
+  const estimate = roomConsensus(room);
+  if (estimate === null) {
+    if (opts?.requireEstimate) opts.onError?.("Need a numeric vote to save");
+    return;
+  }
+  if (room.issue.savedEstimate === estimate) return;
+  try {
+    await saveEstimate(room.issue.issueId, estimate);
+    const current = getRoom(roomId);
+    if (!current?.issue) return;
+    current.issue = { ...current.issue, savedEstimate: estimate };
+    emitRoom(roomId);
+  } catch (err) {
+    opts?.onError?.(err instanceof Error ? err.message : "Could not save to Linear");
+  }
 }
 
 function resetVotes(roomId: string): void {
@@ -105,6 +133,11 @@ io.on("connection", (socket) => {
     player.vote = player.vote === value ? null : String(value).slice(0, 8);
     if (everyoneVoted(room)) room.revealed = true;
     emitRoom(room.id);
+    if (room.revealed) {
+      void saveLinearIfReady(room.id, {
+        onError: (message) => socket.emit("notice", message),
+      });
+    }
   });
 
   socket.on("reveal", () => {
@@ -112,6 +145,9 @@ io.on("connection", (socket) => {
     if (!room) return;
     room.revealed = true;
     emitRoom(room.id);
+    void saveLinearIfReady(room.id, {
+      onError: (message) => socket.emit("notice", message),
+    });
   });
 
   socket.on("new-round", () => {
@@ -135,21 +171,13 @@ io.on("connection", (socket) => {
     }
   });
 
-  socket.on("save-linear", async () => {
+  socket.on("save-linear", () => {
     const room = findRoomByPlayer(socket.id);
-    if (!room?.issue || !room.revealed) return;
-    const estimate = roomConsensus(room);
-    if (estimate === null) {
-      socket.emit("notice", "Need a numeric vote to save");
-      return;
-    }
-    try {
-      await saveEstimate(room.issue.issueId, estimate);
-      room.issue = { ...room.issue, savedEstimate: estimate };
-      emitRoom(room.id);
-    } catch (err) {
-      socket.emit("notice", err instanceof Error ? err.message : "Could not save to Linear");
-    }
+    if (!room) return;
+    void saveLinearIfReady(room.id, {
+      requireEstimate: true,
+      onError: (message) => socket.emit("notice", message),
+    });
   });
 
   socket.on("disconnect", () => {

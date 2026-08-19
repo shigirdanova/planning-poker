@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link, useParams, useSearchParams } from "react-router-dom";
 import { consensus } from "../shared/consensus";
 import { CARDS } from "../shared/types";
@@ -25,12 +25,27 @@ export default function Room() {
   const [params] = useSearchParams();
   const panel = params.get("panel") === "1";
   const [name, setName] = useState(() => sessionStorage.getItem("pp-name") ?? "");
+  const [roomTitle, setRoomTitle] = useState("");
   const [joined, setJoined] = useState(false);
-  const [copied, setCopied] = useState<"link" | "call" | "">("");
+  const [copied, setCopied] = useState(false);
   const [error, setError] = useState("");
   const [linearQuery, setLinearQuery] = useState("");
   const sync = useRoomSync(roomId, name.trim(), joined);
 
+  useEffect(() => {
+    let cancelled = false;
+    void fetch(`/api/rooms/${roomId}`)
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data: { title?: string } | null) => {
+        if (!cancelled && data?.title) setRoomTitle(data.title);
+      })
+      .catch(() => undefined);
+    return () => {
+      cancelled = true;
+    };
+  }, [roomId]);
+
+  const heading = sync.room?.title || roomTitle || "Planning poker";
   const summary = useMemo(
     () => (sync.room?.revealed ? stats(sync.room) : null),
     [sync.room],
@@ -52,17 +67,17 @@ export default function Room() {
     setError("");
   }
 
-  async function copy(kind: "link" | "call") {
-    await navigator.clipboard.writeText(roomShareUrl(roomId, kind === "call"));
-    setCopied(kind);
-    window.setTimeout(() => setCopied(""), 1500);
+  async function copyLink() {
+    await navigator.clipboard.writeText(roomShareUrl(roomId));
+    setCopied(true);
+    window.setTimeout(() => setCopied(false), 1500);
   }
 
   if (!joined) {
     return (
       <div className={panel ? "shell name-gate panel" : "shell name-gate"}>
-        <p className="brand">{panel ? "Call room" : `Room ${roomId}`}</p>
-        <h1>What should we call you?</h1>
+        <p className="brand">{heading}</p>
+        <h1>Your name</h1>
         <div className="panel-box">
           <div className="row">
             <input
@@ -70,6 +85,7 @@ export default function Room() {
               placeholder="Your name"
               value={name}
               maxLength={40}
+              autoFocus
               onChange={(e) => setName(e.target.value)}
               onKeyDown={(e) => {
                 if (e.key === "Enter") join();
@@ -89,18 +105,13 @@ export default function Room() {
     <div className={panel ? "shell panel" : "shell"}>
       <div className="toolbar">
         <div className="nav">
-          <p className="brand">{panel ? "Call" : "Planning poker"}</p>
+          <p className="brand">{heading}</p>
           {!panel ? <Link to="/">New room</Link> : null}
         </div>
         <div className="row">
-          <button type="button" className="secondary" onClick={() => void copy("link")}>
-            {copied === "link" ? "Copied" : "Copy link"}
+          <button type="button" className="secondary" onClick={() => void copyLink()}>
+            {copied ? "Copied" : "Copy link"}
           </button>
-          {!panel ? (
-            <button type="button" className="secondary" onClick={() => void copy("call")}>
-              {copied === "call" ? "Copied" : "Meet layout"}
-            </button>
-          ) : null}
         </div>
       </div>
 

@@ -17,6 +17,7 @@ export type LinkedIssue = {
 
 export type RoomState = {
   id: string;
+  title: string;
   topic: string;
   revealed: boolean;
   players: PlayerView[];
