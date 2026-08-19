@@ -3,7 +3,6 @@ import { createServer } from "node:http";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { Server } from "socket.io";
-import { linearConfigured, lookupIssue, saveEstimate } from "./linear.ts";
 import {
   createRoom,
   everyoneVoted,
@@ -11,7 +10,6 @@ import {
   getRoom,
   joinRoom,
   leaveRoom,
-  roomConsensus,
   toState,
 } from "./rooms.ts";
 
@@ -30,10 +28,6 @@ app.use((_req, res, next) => {
 
 app.get("/api/health", (_req, res) => {
   res.json({ ok: true });
-});
-
-app.get("/api/linear/status", (_req, res) => {
-  res.json({ configured: linearConfigured() });
 });
 
 app.post("/api/rooms", (req, res) => {
@@ -74,29 +68,6 @@ function emitRoom(roomId: string): void {
   const room = getRoom(roomId);
   if (!room) return;
   io.to(roomId).emit("room", toState(room));
-}
-
-async function saveLinearIfReady(
-  roomId: string,
-  opts?: { requireEstimate?: boolean; onError?: (message: string) => void },
-): Promise<void> {
-  const room = getRoom(roomId);
-  if (!room?.issue || !room.revealed) return;
-  const estimate = roomConsensus(room);
-  if (estimate === null) {
-    if (opts?.requireEstimate) opts.onError?.("Need a majority vote to save");
-    return;
-  }
-  if (room.issue.savedEstimate === estimate) return;
-  try {
-    await saveEstimate(room.issue.issueId, estimate);
-    const current = getRoom(roomId);
-    if (!current?.issue) return;
-    current.issue = { ...current.issue, savedEstimate: estimate };
-    emitRoom(roomId);
-  } catch (err) {
-    opts?.onError?.(err instanceof Error ? err.message : "Could not save to Linear");
-  }
 }
 
 function resetVotes(roomId: string): void {
@@ -147,29 +118,6 @@ io.on("connection", (socket) => {
     if (!room) return;
     resetVotes(room.id);
     emitRoom(room.id);
-  });
-
-  socket.on("pull-linear", async (query: string) => {
-    const room = findRoomByPlayer(socket.id);
-    if (!room) return;
-    try {
-      const issue = await lookupIssue(String(query ?? ""));
-      room.issue = { ...issue, savedEstimate: null };
-      room.topic = `${issue.identifier} · ${issue.title}`.slice(0, 200);
-      resetVotes(room.id);
-      emitRoom(room.id);
-    } catch (err) {
-      socket.emit("notice", err instanceof Error ? err.message : "Could not load Linear issue");
-    }
-  });
-
-  socket.on("save-linear", () => {
-    const room = findRoomByPlayer(socket.id);
-    if (!room) return;
-    void saveLinearIfReady(room.id, {
-      requireEstimate: true,
-      onError: (message) => socket.emit("notice", message),
-    });
   });
 
   socket.on("disconnect", () => {

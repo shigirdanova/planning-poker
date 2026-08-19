@@ -29,7 +29,6 @@ export default function Room() {
   const [joined, setJoined] = useState(false);
   const [copied, setCopied] = useState(false);
   const [error, setError] = useState("");
-  const [linearQuery, setLinearQuery] = useState("");
   const sync = useRoomSync(roomId, name.trim(), joined);
 
   useEffect(() => {
@@ -48,10 +47,6 @@ export default function Room() {
   const heading = sync.room?.title || roomTitle || "Planning poker";
   const summary = useMemo(
     () => (sync.room?.revealed ? stats(sync.room) : null),
-    [sync.room],
-  );
-  const points = useMemo(
-    () => (sync.room?.revealed ? consensus(sync.room.players.map((p) => p.vote)) : null),
     [sync.room],
   );
   const votedCount = sync.room?.players.filter((p) => p.hasVoted).length ?? 0;
@@ -115,13 +110,6 @@ export default function Room() {
         </div>
       </div>
 
-      {sync.room?.issue ? (
-        <a className="issue" href={sync.room.issue.url} target="_blank" rel="noreferrer">
-          <span>{sync.room.issue.identifier}</span>
-          {sync.room.issue.title}
-        </a>
-      ) : null}
-
       <input
         className="topic"
         type="text"
@@ -130,28 +118,6 @@ export default function Room() {
         maxLength={200}
         onChange={(e) => sync.setTopic(e.target.value)}
       />
-
-      {sync.room?.linearReady ? (
-        <form
-          className="row ticket-row"
-          onSubmit={(e) => {
-            e.preventDefault();
-            if (!linearQuery.trim()) return;
-            sync.pullLinear(linearQuery.trim());
-            setLinearQuery("");
-          }}
-        >
-          <input
-            type="text"
-            placeholder="CAT-123 or Linear URL"
-            value={linearQuery}
-            onChange={(e) => setLinearQuery(e.target.value)}
-          />
-          <button type="submit" className="secondary">
-            Pull issue
-          </button>
-        </form>
-      ) : null}
 
       {sync.status !== "online" ? <p className="hint">Connecting…</p> : null}
       {sync.notice ? <p className="error">{sync.notice}</p> : null}
@@ -204,18 +170,6 @@ export default function Room() {
         <button type="button" className="secondary" onClick={() => sync.newRound()}>
           Next round
         </button>
-        {sync.room?.issue && points !== null && sync.room.revealed ? (
-          <button
-            type="button"
-            className="secondary"
-            onClick={() => sync.saveLinear()}
-            disabled={sync.room.issue.savedEstimate === points}
-          >
-            {sync.room.issue.savedEstimate === points
-              ? `Saved ${points} in Linear`
-              : `Save ${points} to Linear`}
-          </button>
-        ) : null}
       </div>
 
       <div className="cards">

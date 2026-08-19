@@ -56,13 +56,5 @@ export function useRoomSync(roomId: string, name: string, enabled: boolean) {
       setMyVote(null);
       socketRef.current?.emit("new-round");
     },
-    pullLinear(query: string) {
-      setNotice("");
-      socketRef.current?.emit("pull-linear", query);
-    },
-    saveLinear() {
-      setNotice("");
-      socketRef.current?.emit("save-linear");
-    },
   };
 }

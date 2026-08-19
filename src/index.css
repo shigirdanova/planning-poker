@@ -273,26 +273,6 @@ button:disabled {
   font-size: 14px;
 }
 
-.ticket-row {
-  margin: 0 0 18px;
-}
-
-.issue {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  margin: 0 0 8px;
-  color: var(--ink);
-  font-size: 13px;
-}
-
-.issue span {
-  padding: 2px 7px;
-  border: 1px solid var(--line);
-  border-radius: 999px;
-  color: var(--muted);
-}
-
 .shell.panel {
   max-width: 380px;
   padding: 12px 12px 24px;
