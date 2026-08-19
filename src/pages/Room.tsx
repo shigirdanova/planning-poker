@@ -12,9 +12,9 @@ function stats(room: RoomState) {
     .filter((v): v is string => v !== null && /^\d+$/.test(v))
     .map(Number);
   if (nums.length === 0) return null;
-  const avg = nums.reduce((a, b) => a + b, 0) / nums.length;
+  const majority = consensus(room.players.map((p) => p.vote));
   return {
-    avg: Number.isInteger(avg) ? String(avg) : avg.toFixed(1),
+    majority,
     min: Math.min(...nums),
     max: Math.max(...nums),
   };
@@ -160,7 +160,8 @@ export default function Room() {
         {summary ? (
           <>
             <span>
-              Average <b>{summary.avg}</b>
+              Majority{" "}
+              <b>{summary.majority ?? "none"}</b>
             </span>
             <span>
               Spread{" "}

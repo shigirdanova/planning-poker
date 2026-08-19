@@ -1,10 +1,24 @@
 export function consensus(votes: Array<string | null>): number | null {
   const nums = votes
     .filter((value): value is string => value !== null && /^\d+$/.test(value))
-    .map(Number)
-    .sort((a, b) => a - b);
+    .map(Number);
   if (nums.length === 0) return null;
-  const mid = Math.floor(nums.length / 2);
-  if (nums.length % 2 === 1) return nums[mid];
-  return Math.round((nums[mid - 1] + nums[mid]) / 2);
+
+  const counts = new Map<number, number>();
+  for (const value of nums) counts.set(value, (counts.get(value) ?? 0) + 1);
+
+  let best: number | null = null;
+  let bestCount = 0;
+  let tied = false;
+  for (const [value, count] of counts) {
+    if (count > bestCount) {
+      best = value;
+      bestCount = count;
+      tied = false;
+    } else if (count === bestCount) {
+      tied = true;
+    }
+  }
+
+  return tied ? null : best;
 }

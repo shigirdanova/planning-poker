@@ -84,7 +84,7 @@ async function saveLinearIfReady(
   if (!room?.issue || !room.revealed) return;
   const estimate = roomConsensus(room);
   if (estimate === null) {
-    if (opts?.requireEstimate) opts.onError?.("Need a numeric vote to save");
+    if (opts?.requireEstimate) opts.onError?.("Need a majority vote to save");
     return;
   }
   if (room.issue.savedEstimate === estimate) return;
@@ -133,11 +133,6 @@ io.on("connection", (socket) => {
     player.vote = player.vote === value ? null : String(value).slice(0, 8);
     if (everyoneVoted(room)) room.revealed = true;
     emitRoom(room.id);
-    if (room.revealed) {
-      void saveLinearIfReady(room.id, {
-        onError: (message) => socket.emit("notice", message),
-      });
-    }
   });
 
   socket.on("reveal", () => {
@@ -145,9 +140,6 @@ io.on("connection", (socket) => {
     if (!room) return;
     room.revealed = true;
     emitRoom(room.id);
-    void saveLinearIfReady(room.id, {
-      onError: (message) => socket.emit("notice", message),
-    });
   });
 
   socket.on("new-round", () => {
