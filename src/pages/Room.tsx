@@ -98,6 +98,9 @@ export default function Room() {
   const everyoneVoted = playerCount > 0 && votedCount === playerCount;
   const [editingName, setEditingName] = useState<string | null>(null);
   const [menuFor, setMenuFor] = useState<string | null>(null);
+  const [confirm, setConfirm] = useState<{ id: string; name: string; self: boolean } | null>(
+    null,
+  );
   const menuRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -105,6 +108,15 @@ export default function Room() {
     setJoined(false);
     setError("You were removed from the room");
   }, [sync.kicked]);
+
+  useEffect(() => {
+    if (!confirm) return;
+    function onKey(event: KeyboardEvent) {
+      if (event.key === "Escape") setConfirm(null);
+    }
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, [confirm]);
 
   useEffect(() => {
     if (!menuFor) return;
@@ -313,7 +325,7 @@ export default function Room() {
                               role="menuitem"
                               onClick={() => {
                                 setMenuFor(null);
-                                sync.removePlayer(player.id);
+                                setConfirm({ id: player.id, name: player.name, self: true });
                               }}
                             >
                               Leave
@@ -325,7 +337,7 @@ export default function Room() {
                             role="menuitem"
                             onClick={() => {
                               setMenuFor(null);
-                              sync.removePlayer(player.id);
+                              setConfirm({ id: player.id, name: player.name, self: false });
                             }}
                           >
                             Remove
@@ -340,6 +352,41 @@ export default function Room() {
           );
         })}
       </div>
+
+      {confirm ? (
+        <div className="overlay" role="presentation" onClick={() => setConfirm(null)}>
+          <div
+            className="dialog"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="confirm-title"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <h2 id="confirm-title">
+              {confirm.self ? "Leave this room?" : `Remove ${confirm.name}?`}
+            </h2>
+            <p>
+              {confirm.self
+                ? "You can join again if this was a mistake."
+                : "They can join again if this was a mistake."}
+            </p>
+            <div className="row">
+              <button type="button" className="secondary" autoFocus onClick={() => setConfirm(null)}>
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  sync.removePlayer(confirm.id);
+                  setConfirm(null);
+                }}
+              >
+                {confirm.self ? "Leave" : "Remove"}
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
 
       <div className="actions">
         {sync.room?.revealed ? null : (

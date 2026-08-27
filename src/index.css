@@ -441,6 +441,40 @@ button:disabled {
   font-size: 14px;
 }
 
+.overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 20;
+  display: grid;
+  place-items: center;
+  padding: 20px;
+  background: rgb(17 17 17 / 28%);
+}
+
+.dialog {
+  width: min(100%, 360px);
+  padding: 22px 22px 18px;
+  background: var(--surface);
+  border-radius: 16px;
+}
+
+.dialog h2 {
+  margin: 0 0 8px;
+  font-size: 20px;
+  font-weight: 500;
+  letter-spacing: -0.03em;
+}
+
+.dialog p {
+  margin: 0 0 20px;
+  color: var(--muted);
+  font-size: 14px;
+}
+
+.dialog .row {
+  justify-content: flex-end;
+}
+
 .shell.panel {
   max-width: 380px;
   padding: 12px 12px 24px;
