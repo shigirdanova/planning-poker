@@ -299,9 +299,10 @@ button:disabled {
 .player {
   display: flex;
   align-items: center;
-  gap: 10px;
-  min-width: 168px;
-  padding: 10px 12px;
+  gap: 8px;
+  width: max-content;
+  max-width: 100%;
+  padding: 8px 10px;
   background: var(--surface);
   border: 1px solid var(--line);
   border-radius: 12px;
@@ -311,32 +312,35 @@ button:disabled {
   border-color: var(--ink);
 }
 
+.player.voted {
+  background: color-mix(in srgb, var(--go) 14%, var(--surface));
+  border-color: color-mix(in srgb, var(--go) 28%, var(--line));
+}
+
+.player.mine.voted {
+  border-color: var(--ink);
+}
+
 .player-info {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
   min-width: 0;
-  flex: 1;
+}
+
+.player button.icon {
+  width: 22px;
+  height: 22px;
 }
 
 .player strong {
-  display: flex;
-  align-items: baseline;
-  gap: 6px;
   min-width: 0;
   font-size: 14px;
   font-weight: 500;
 }
 
-.you {
-  color: var(--muted);
-  font-size: 12px;
-  font-weight: 500;
-}
-
 .player-menu {
   position: relative;
-  margin-left: auto;
 }
 
 .menu {
@@ -386,18 +390,6 @@ button:disabled {
   color: #fff;
   font-size: 14px;
   font-weight: 500;
-}
-
-.chip.back {
-  background: var(--go);
-  color: #fff;
-}
-
-.chip.empty {
-  background: var(--fill);
-  color: var(--muted);
-  font-size: 11px;
-  font-weight: 400;
 }
 
 .actions {

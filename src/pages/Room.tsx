@@ -21,20 +21,6 @@ function PencilIcon() {
   );
 }
 
-function CheckIcon() {
-  return (
-    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-      <path
-        d="M3.5 8.2 6.4 11l6.1-7"
-        stroke="currentColor"
-        strokeWidth="1.8"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-    </svg>
-  );
-}
-
 function MoreIcon() {
   return (
     <svg width="15" height="15" viewBox="0 0 16 16" fill="none" aria-hidden="true">
@@ -122,6 +108,12 @@ export default function Room() {
     setJoined(false);
     setError("You were removed from the room");
   }, [sync.kicked]);
+
+  useEffect(() => {
+    if (!sync.room?.revealed) return;
+    setMenuFor(null);
+    setEditingName(null);
+  }, [sync.room?.revealed]);
 
   useEffect(() => {
     if (!confirm) return;
@@ -279,17 +271,18 @@ export default function Room() {
           const mine = player.id === sync.myId;
           const editing = mine && editingName !== null;
           const menuOpen = menuFor === player.id;
+          const waitingVote = Boolean(player.hasVoted && !sync.room?.revealed);
           return (
-            <div className={mine ? "player mine" : "player"} key={player.id}>
+            <div
+              className={["player", mine && "mine", waitingVote && "voted"]
+                .filter(Boolean)
+                .join(" ")}
+              key={player.id}
+              aria-label={waitingVote ? `${player.name}, voted` : undefined}
+            >
               {sync.room?.revealed ? (
                 <div className="chip">{player.vote ?? "—"}</div>
-              ) : player.hasVoted ? (
-                <div className="chip back" aria-label="Voted">
-                  <CheckIcon />
-                </div>
-              ) : (
-                <div className="chip empty" aria-label="Waiting" />
-              )}
+              ) : null}
               <div className="player-info">
                 {editing ? (
                   <input
@@ -306,12 +299,9 @@ export default function Room() {
                     }}
                   />
                 ) : (
-                  <strong>
-                    {player.name}
-                    {mine ? <span className="you">You</span> : null}
-                  </strong>
+                  <strong>{player.name}</strong>
                 )}
-                {editing ? null : (
+                {editing || sync.room?.revealed ? null : (
                   <div className="player-menu" ref={menuOpen ? menuRef : undefined}>
                     <button
                       type="button"
