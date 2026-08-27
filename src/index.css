@@ -128,17 +128,20 @@ button.show-votes:hover:not(:disabled) {
   background: #187a42;
 }
 
-button.text {
+button.icon {
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
   background: transparent;
   color: var(--muted);
-  border: 0;
-  border-radius: 0;
-  padding: 0;
-  font-size: 12px;
-  font-weight: 500;
+  border-radius: 8px;
 }
 
-button.text:hover:not(:disabled) {
+button.icon:hover:not(:disabled) {
+  background: var(--fill);
   color: var(--ink);
 }
 
@@ -310,8 +313,8 @@ button:disabled {
 
 .player-info {
   display: flex;
-  flex-direction: column;
-  gap: 4px;
+  align-items: center;
+  gap: 8px;
   min-width: 0;
   flex: 1;
 }
@@ -320,6 +323,7 @@ button:disabled {
   display: flex;
   align-items: baseline;
   gap: 6px;
+  min-width: 0;
   font-size: 14px;
   font-weight: 500;
 }
@@ -330,9 +334,38 @@ button:disabled {
   font-weight: 500;
 }
 
-.player-actions {
-  display: flex;
-  gap: 10px;
+.player-menu {
+  position: relative;
+  margin-left: auto;
+}
+
+.menu {
+  position: absolute;
+  top: calc(100% + 4px);
+  right: 0;
+  z-index: 5;
+  min-width: 132px;
+  padding: 4px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  box-shadow: 0 8px 24px rgb(0 0 0 / 8%);
+}
+
+.menu button {
+  display: block;
+  width: 100%;
+  padding: 8px 10px;
+  background: transparent;
+  color: var(--ink);
+  border-radius: 8px;
+  text-align: left;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.menu button:hover:not(:disabled) {
+  background: var(--fill);
 }
 
 .player input[type="text"] {

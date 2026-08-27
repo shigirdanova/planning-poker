@@ -8,6 +8,29 @@ import { roomShareUrl } from "../share";
 import { playRevealSound } from "../sound";
 import { useRoomSync } from "../sync";
 
+function PencilIcon() {
+  return (
+    <svg width="15" height="15" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+      <path
+        d="M11.4 2.6a1.2 1.2 0 0 1 1.7 1.7L6.2 11.2 4 12l.8-2.2 6.6-7.2Z"
+        stroke="currentColor"
+        strokeWidth="1.4"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
+function MoreIcon() {
+  return (
+    <svg width="15" height="15" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+      <circle cx="3.5" cy="8" r="1.15" fill="currentColor" />
+      <circle cx="8" cy="8" r="1.15" fill="currentColor" />
+      <circle cx="12.5" cy="8" r="1.15" fill="currentColor" />
+    </svg>
+  );
+}
+
 function result(room: RoomState) {
   const nums = room.players
     .map((player) => player.vote)
@@ -74,12 +97,32 @@ export default function Room() {
   const playerCount = sync.room?.players.length ?? 0;
   const everyoneVoted = playerCount > 0 && votedCount === playerCount;
   const [editingName, setEditingName] = useState<string | null>(null);
+  const [menuFor, setMenuFor] = useState<string | null>(null);
+  const menuRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (!sync.kicked) return;
     setJoined(false);
     setError("You were removed from the room");
   }, [sync.kicked]);
+
+  useEffect(() => {
+    if (!menuFor) return;
+    function onPointer(event: PointerEvent) {
+      if (!(event.target instanceof Node)) return;
+      if (menuRef.current?.contains(event.target)) return;
+      setMenuFor(null);
+    }
+    function onKey(event: KeyboardEvent) {
+      if (event.key === "Escape") setMenuFor(null);
+    }
+    document.addEventListener("pointerdown", onPointer);
+    document.addEventListener("keydown", onKey);
+    return () => {
+      document.removeEventListener("pointerdown", onPointer);
+      document.removeEventListener("keydown", onKey);
+    };
+  }, [menuFor]);
 
   function join() {
     const trimmed = name.trim();
@@ -209,6 +252,7 @@ export default function Room() {
         {(sync.room?.players ?? []).map((player) => {
           const mine = player.id === sync.myId;
           const editing = mine && editingName !== null;
+          const menuOpen = menuFor === player.id;
           return (
             <div className={mine ? "player mine" : "player"} key={player.id}>
               {sync.room?.revealed ? (
@@ -239,24 +283,58 @@ export default function Room() {
                     {mine ? <span className="you">You</span> : null}
                   </strong>
                 )}
-                <div className="player-actions">
-                  {mine ? (
+                {editing ? null : (
+                  <div className="player-menu" ref={menuOpen ? menuRef : undefined}>
                     <button
                       type="button"
-                      className="text"
-                      onClick={() => setEditingName(player.name)}
+                      className="icon"
+                      aria-label={mine ? "Your options" : "Player options"}
+                      aria-expanded={menuOpen}
+                      onClick={() => setMenuFor(menuOpen ? null : player.id)}
                     >
-                      Rename
+                      {mine ? <PencilIcon /> : <MoreIcon />}
                     </button>
-                  ) : null}
-                  <button
-                    type="button"
-                    className="text"
-                    onClick={() => sync.removePlayer(player.id)}
-                  >
-                    {mine ? "Leave" : "Remove"}
-                  </button>
-                </div>
+                    {menuOpen ? (
+                      <div className="menu" role="menu">
+                        {mine ? (
+                          <>
+                            <button
+                              type="button"
+                              role="menuitem"
+                              onClick={() => {
+                                setMenuFor(null);
+                                setEditingName(player.name);
+                              }}
+                            >
+                              Rename
+                            </button>
+                            <button
+                              type="button"
+                              role="menuitem"
+                              onClick={() => {
+                                setMenuFor(null);
+                                sync.removePlayer(player.id);
+                              }}
+                            >
+                              Leave
+                            </button>
+                          </>
+                        ) : (
+                          <button
+                            type="button"
+                            role="menuitem"
+                            onClick={() => {
+                              setMenuFor(null);
+                              sync.removePlayer(player.id);
+                            }}
+                          >
+                            Remove
+                          </button>
+                        )}
+                      </div>
+                    ) : null}
+                  </div>
+                )}
               </div>
             </div>
           );
