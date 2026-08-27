@@ -389,9 +389,8 @@ button:disabled {
 }
 
 .chip.back {
-  background: var(--ink);
+  background: var(--go);
   color: #fff;
-  font-size: 10px;
 }
 
 .chip.empty {

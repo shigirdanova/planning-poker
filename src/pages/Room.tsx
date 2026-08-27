@@ -21,6 +21,20 @@ function PencilIcon() {
   );
 }
 
+function CheckIcon() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+      <path
+        d="M3.5 8.2 6.4 11l6.1-7"
+        stroke="currentColor"
+        strokeWidth="1.8"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
 function MoreIcon() {
   return (
     <svg width="15" height="15" viewBox="0 0 16 16" fill="none" aria-hidden="true">
@@ -270,7 +284,9 @@ export default function Room() {
               {sync.room?.revealed ? (
                 <div className="chip">{player.vote ?? "—"}</div>
               ) : player.hasVoted ? (
-                <div className="chip back" aria-label="Voted" />
+                <div className="chip back" aria-label="Voted">
+                  <CheckIcon />
+                </div>
               ) : (
                 <div className="chip empty" aria-label="Waiting" />
               )}
