@@ -73,6 +73,13 @@ export default function Room() {
   const votedCount = sync.room?.players.filter((player) => player.hasVoted).length ?? 0;
   const playerCount = sync.room?.players.length ?? 0;
   const everyoneVoted = playerCount > 0 && votedCount === playerCount;
+  const [editingName, setEditingName] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!sync.kicked) return;
+    setJoined(false);
+    setError("You were removed from the room");
+  }, [sync.kicked]);
 
   function join() {
     const trimmed = name.trim();
@@ -84,6 +91,17 @@ export default function Room() {
     setName(trimmed);
     setJoined(true);
     setError("");
+  }
+
+  function saveName() {
+    const trimmed = (editingName ?? "").trim();
+    if (!trimmed) {
+      setEditingName(null);
+      return;
+    }
+    setStoredName(trimmed);
+    sync.rename(trimmed);
+    setEditingName(null);
   }
 
   async function copyLink() {
@@ -188,18 +206,61 @@ export default function Room() {
       )}
 
       <div className="players">
-        {(sync.room?.players ?? []).map((player) => (
-          <div className="player" key={player.id}>
-            {sync.room?.revealed ? (
-              <div className="chip">{player.vote ?? "—"}</div>
-            ) : player.hasVoted ? (
-              <div className="chip back" aria-label="Voted" />
-            ) : (
-              <div className="chip empty" aria-label="Waiting" />
-            )}
-            <strong>{player.name}</strong>
-          </div>
-        ))}
+        {(sync.room?.players ?? []).map((player) => {
+          const mine = player.id === sync.myId;
+          const editing = mine && editingName !== null;
+          return (
+            <div className={mine ? "player mine" : "player"} key={player.id}>
+              {sync.room?.revealed ? (
+                <div className="chip">{player.vote ?? "—"}</div>
+              ) : player.hasVoted ? (
+                <div className="chip back" aria-label="Voted" />
+              ) : (
+                <div className="chip empty" aria-label="Waiting" />
+              )}
+              <div className="player-info">
+                {editing ? (
+                  <input
+                    type="text"
+                    value={editingName}
+                    maxLength={40}
+                    autoFocus
+                    aria-label="Your name"
+                    onChange={(e) => setEditingName(e.target.value)}
+                    onBlur={saveName}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") saveName();
+                      if (e.key === "Escape") setEditingName(null);
+                    }}
+                  />
+                ) : (
+                  <strong>
+                    {player.name}
+                    {mine ? <span className="you">You</span> : null}
+                  </strong>
+                )}
+                <div className="player-actions">
+                  {mine ? (
+                    <button
+                      type="button"
+                      className="text"
+                      onClick={() => setEditingName(player.name)}
+                    >
+                      Rename
+                    </button>
+                  ) : null}
+                  <button
+                    type="button"
+                    className="text"
+                    onClick={() => sync.removePlayer(player.id)}
+                  >
+                    {mine ? "Leave" : "Remove"}
+                  </button>
+                </div>
+              </div>
+            </div>
+          );
+        })}
       </div>
 
       <div className="actions">

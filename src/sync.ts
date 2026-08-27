@@ -8,6 +8,8 @@ export function useRoomSync(roomId: string, name: string, enabled: boolean) {
   const myIdRef = useRef<string | null>(null);
   const [room, setRoom] = useState<RoomState | null>(null);
   const [myVote, setMyVote] = useState<string | null>(null);
+  const [myId, setMyId] = useState<string | null>(null);
+  const [kicked, setKicked] = useState(false);
   const [status, setStatus] = useState<"connecting" | "online" | "error">("connecting");
   const [notice, setNotice] = useState("");
 
@@ -18,6 +20,8 @@ export function useRoomSync(roomId: string, name: string, enabled: boolean) {
     const socket = io({ autoConnect: true });
     socketRef.current = socket;
     myIdRef.current = null;
+    setMyId(null);
+    setKicked(false);
 
     socket.on("connect", () => {
       setStatus("online");
@@ -28,7 +32,15 @@ export function useRoomSync(roomId: string, name: string, enabled: boolean) {
     socket.on("notice", (message: string) => setNotice(message));
     socket.on("self", ({ id, vote }: { id: string; vote: string | null }) => {
       myIdRef.current = id;
+      setMyId(id);
       setMyVote(vote);
+    });
+    socket.on("kicked", () => {
+      myIdRef.current = null;
+      setMyId(null);
+      setRoom(null);
+      setMyVote(null);
+      setKicked(true);
     });
     socket.on("room", (state: RoomState) => {
       setNotice("");
@@ -50,9 +62,11 @@ export function useRoomSync(roomId: string, name: string, enabled: boolean) {
 
   return {
     room,
+    myId,
     myVote,
     status,
     notice,
+    kicked,
     setTopic(topic: string) {
       socketRef.current?.emit("topic", topic);
     },
@@ -66,6 +80,12 @@ export function useRoomSync(roomId: string, name: string, enabled: boolean) {
     newRound() {
       setMyVote(null);
       socketRef.current?.emit("new-round");
+    },
+    rename(next: string) {
+      socketRef.current?.emit("rename", next);
+    },
+    removePlayer(playerId: string) {
+      socketRef.current?.emit("remove-player", playerId);
     },
   };
 }

@@ -114,6 +114,21 @@ function emitRoom(roomId: string): void {
   io.to(roomId).emit("room", toState(room));
 }
 
+async function kickPlayer(roomId: string, playerId: string): Promise<void> {
+  cancelLeave(playerId);
+  const sockets = await io.in(roomId).fetchSockets();
+  for (const sock of sockets) {
+    const seat = seats.get(sock.id);
+    if (seat?.playerId !== playerId) continue;
+    sock.emit("kicked");
+    void sock.leave(roomId);
+    seats.delete(sock.id);
+  }
+  leaveRoom(roomId, playerId);
+  emitRoom(roomId);
+  scheduleEmpty(roomId);
+}
+
 function seatOf(socketId: string): Seat | undefined {
   return seats.get(socketId);
 }
@@ -218,6 +233,26 @@ io.on("connection", (socket) => {
     }
     player.vote = player.vote === value ? null : value;
     emitRoom(room.id);
+  });
+
+  socket.on("rename", (name) => {
+    const seat = seatOf(socket.id);
+    if (!seat) return;
+    const room = getRoom(seat.roomId);
+    const player = room?.players.get(seat.playerId);
+    const trimmed = String(name ?? "").trim().slice(0, 40);
+    if (!room || !player || !trimmed) return;
+    player.name = trimmed;
+    emitRoom(room.id);
+  });
+
+  socket.on("remove-player", (playerId) => {
+    const seat = seatOf(socket.id);
+    if (!seat) return;
+    const room = getRoom(seat.roomId);
+    const id = String(playerId ?? "").trim();
+    if (!room || !id || !room.players.has(id)) return;
+    void kickPlayer(room.id, id);
   });
 
   socket.on("reveal", () => {

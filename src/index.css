@@ -128,6 +128,20 @@ button.show-votes:hover:not(:disabled) {
   background: #187a42;
 }
 
+button.text {
+  background: transparent;
+  color: var(--muted);
+  border: 0;
+  border-radius: 0;
+  padding: 0;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+button.text:hover:not(:disabled) {
+  color: var(--ink);
+}
+
 button:disabled {
   opacity: 0.35;
   cursor: not-allowed;
@@ -283,16 +297,49 @@ button:disabled {
   display: flex;
   align-items: center;
   gap: 10px;
-  min-width: 148px;
+  min-width: 168px;
   padding: 10px 12px;
   background: var(--surface);
   border: 1px solid var(--line);
   border-radius: 12px;
 }
 
+.player.mine {
+  border-color: var(--ink);
+}
+
+.player-info {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+  flex: 1;
+}
+
 .player strong {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
   font-size: 14px;
   font-weight: 500;
+}
+
+.you {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.player-actions {
+  display: flex;
+  gap: 10px;
+}
+
+.player input[type="text"] {
+  min-width: 0;
+  width: 100%;
+  padding: 4px 8px;
+  font-size: 14px;
 }
 
 .chip {
