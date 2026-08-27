@@ -21,6 +21,7 @@ export default function Home() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ name: trimmed }),
       });
+      if (res.status === 429) throw new Error("Too many rooms. Try again later.");
       if (!res.ok) throw new Error("Could not create a room");
       const data = (await res.json()) as { id: string };
       navigate(`/r/${data.id}`);

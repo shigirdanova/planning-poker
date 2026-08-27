@@ -1,9 +1,11 @@
 import { io, type Socket } from "socket.io-client";
 import { useEffect, useRef, useState } from "react";
+import { getResumeToken } from "./identity";
 import type { RoomState } from "./shared/types";
 
 export function useRoomSync(roomId: string, name: string, enabled: boolean) {
   const socketRef = useRef<Socket | null>(null);
+  const myIdRef = useRef<string | null>(null);
   const [room, setRoom] = useState<RoomState | null>(null);
   const [myVote, setMyVote] = useState<string | null>(null);
   const [status, setStatus] = useState<"connecting" | "online" | "error">("connecting");
@@ -12,22 +14,32 @@ export function useRoomSync(roomId: string, name: string, enabled: boolean) {
   useEffect(() => {
     if (!enabled || !roomId) return;
 
+    const resumeToken = getResumeToken();
     const socket = io({ autoConnect: true });
     socketRef.current = socket;
+    myIdRef.current = null;
 
     socket.on("connect", () => {
       setStatus("online");
-      socket.emit("join", { roomId, name });
+      socket.emit("join", { roomId, name, resumeToken });
     });
     socket.on("disconnect", () => setStatus("connecting"));
     socket.on("connect_error", () => setStatus("error"));
     socket.on("notice", (message: string) => setNotice(message));
+    socket.on("self", ({ id, vote }: { id: string; vote: string | null }) => {
+      myIdRef.current = id;
+      setMyVote(vote);
+    });
     socket.on("room", (state: RoomState) => {
       setNotice("");
       setRoom(state);
-      const me = state.players.find((player) => player.id === socket.id);
-      if (state.revealed) return;
-      if (!me?.hasVoted) setMyVote(null);
+      const me = state.players.find((player) => player.id === myIdRef.current);
+      if (!me) return;
+      if (state.revealed) {
+        if (me.vote) setMyVote(me.vote);
+        return;
+      }
+      if (!me.hasVoted) setMyVote(null);
     });
 
     return () => {
@@ -45,8 +57,7 @@ export function useRoomSync(roomId: string, name: string, enabled: boolean) {
       socketRef.current?.emit("topic", topic);
     },
     vote(value: string) {
-      const next = myVote === value ? null : value;
-      setMyVote(next);
+      setMyVote((current) => (current === value ? null : value));
       socketRef.current?.emit("vote", value);
     },
     reveal() {

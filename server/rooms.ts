@@ -1,8 +1,12 @@
 import { nanoid } from "nanoid";
 import type { RoomState } from "../src/shared/types.ts";
 
+export const MAX_ROOMS = 200;
+export const ROOM_ID = /^[A-Za-z0-9_-]{8,16}$/;
+
 type Player = {
   id: string;
+  resumeToken: string;
   name: string;
   vote: string | null;
 };
@@ -17,16 +21,16 @@ type Room = {
 
 const rooms = new Map<string, Room>();
 
-export function createRoom(opts: { id?: string; title?: string } = {}): Room {
-  const id = opts.id ?? nanoid(8);
+export function createRoom(opts: { title?: string } = {}): Room | undefined {
+  if (rooms.size >= MAX_ROOMS) return undefined;
   const room: Room = {
-    id,
+    id: nanoid(8),
     title: (opts.title ?? "").trim().slice(0, 60),
     topic: "",
     revealed: false,
     players: new Map(),
   };
-  rooms.set(id, room);
+  rooms.set(room.id, room);
   return room;
 }
 
@@ -34,29 +38,46 @@ export function getRoom(id: string): Room | undefined {
   return rooms.get(id);
 }
 
-export function joinRoom(roomId: string, playerId: string, name: string): Room {
-  const room = rooms.get(roomId) ?? createRoom({ id: roomId });
-  room.players.set(playerId, { id: playerId, name, vote: null });
-  return room;
+export function deleteRoom(id: string): void {
+  rooms.delete(id);
+}
+
+export function findByResumeToken(token: string): { room: Room; player: Player } | undefined {
+  for (const room of rooms.values()) {
+    for (const player of room.players.values()) {
+      if (player.resumeToken === token) return { room, player };
+    }
+  }
+  return undefined;
+}
+
+export function joinRoom(
+  roomId: string,
+  resumeToken: string,
+  name: string,
+): { room: Room; player: Player } | undefined {
+  const room = rooms.get(roomId);
+  if (!room) return undefined;
+  for (const player of room.players.values()) {
+    if (player.resumeToken === resumeToken) {
+      player.name = name;
+      return { room, player };
+    }
+  }
+  const player: Player = {
+    id: nanoid(12),
+    resumeToken,
+    name,
+    vote: null,
+  };
+  room.players.set(player.id, player);
+  return { room, player };
 }
 
 export function leaveRoom(roomId: string, playerId: string): void {
   const room = rooms.get(roomId);
   if (!room) return;
   room.players.delete(playerId);
-  if (room.players.size === 0) rooms.delete(roomId);
-}
-
-export function findRoomByPlayer(playerId: string): Room | undefined {
-  for (const room of rooms.values()) {
-    if (room.players.has(playerId)) return room;
-  }
-  return undefined;
-}
-
-export function everyoneVoted(room: Room): boolean {
-  if (room.players.size === 0) return false;
-  return [...room.players.values()].every((player) => player.vote !== null);
 }
 
 export function toState(room: Room): RoomState {

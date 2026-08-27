@@ -1,22 +1,32 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useParams, useSearchParams } from "react-router-dom";
+import { getStoredName, setStoredName } from "../identity";
 import { consensus } from "../shared/consensus";
 import { CARDS } from "../shared/types";
 import type { RoomState } from "../shared/types";
 import { roomShareUrl } from "../share";
+import { playRevealSound } from "../sound";
 import { useRoomSync } from "../sync";
 
-function stats(room: RoomState) {
+function result(room: RoomState) {
   const nums = room.players
-    .map((p) => p.vote)
-    .filter((v): v is string => v !== null && /^\d+$/.test(v))
+    .map((player) => player.vote)
+    .filter((value): value is string => value !== null && /^\d+$/.test(value))
     .map(Number);
-  if (nums.length === 0) return null;
-  const majority = consensus(room.players.map((p) => p.vote));
+  const majority = consensus(room.players.map((player) => player.vote));
+  const order = new Map<string, number>(CARDS.map((card, index) => [card, index]));
+  const totals = new Map<string, number>();
+  for (const player of room.players) {
+    if (player.vote == null) continue;
+    totals.set(player.vote, (totals.get(player.vote) ?? 0) + 1);
+  }
+  const counts = [...totals.entries()]
+    .map(([value, count]) => ({ value, count }))
+    .sort((a, b) => (order.get(a.value) ?? 99) - (order.get(b.value) ?? 99));
   return {
     majority,
-    min: Math.min(...nums),
-    max: Math.max(...nums),
+    counts,
+    spread: nums.length === 0 ? null : { min: Math.min(...nums), max: Math.max(...nums) },
   };
 }
 
@@ -24,12 +34,14 @@ export default function Room() {
   const { roomId = "" } = useParams();
   const [params] = useSearchParams();
   const panel = params.get("panel") === "1";
-  const [name, setName] = useState(() => sessionStorage.getItem("pp-name") ?? "");
+  const [name, setName] = useState(() => getStoredName());
   const [roomTitle, setRoomTitle] = useState("");
-  const [joined, setJoined] = useState(false);
+  const [joined, setJoined] = useState(() => Boolean(getStoredName()));
   const [copied, setCopied] = useState(false);
   const [error, setError] = useState("");
   const sync = useRoomSync(roomId, name.trim(), joined);
+  const seenRoom = useRef(false);
+  const wasRevealed = useRef(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -44,12 +56,23 @@ export default function Room() {
     };
   }, [roomId]);
 
+  useEffect(() => {
+    if (!sync.room) return;
+    if (seenRoom.current && sync.room.revealed && !wasRevealed.current) {
+      playRevealSound();
+    }
+    seenRoom.current = true;
+    wasRevealed.current = sync.room.revealed;
+  }, [sync.room]);
+
   const heading = sync.room?.title || roomTitle || "Planning poker";
   const summary = useMemo(
-    () => (sync.room?.revealed ? stats(sync.room) : null),
+    () => (sync.room?.revealed ? result(sync.room) : null),
     [sync.room],
   );
-  const votedCount = sync.room?.players.filter((p) => p.hasVoted).length ?? 0;
+  const votedCount = sync.room?.players.filter((player) => player.hasVoted).length ?? 0;
+  const playerCount = sync.room?.players.length ?? 0;
+  const everyoneVoted = playerCount > 0 && votedCount === playerCount;
 
   function join() {
     const trimmed = name.trim();
@@ -57,7 +80,8 @@ export default function Room() {
       setError("Enter your name");
       return;
     }
-    sessionStorage.setItem("pp-name", trimmed);
+    setStoredName(trimmed);
+    setName(trimmed);
     setJoined(true);
     setError("");
   }
@@ -122,27 +146,46 @@ export default function Room() {
       {sync.status !== "online" ? <p className="hint">Connecting…</p> : null}
       {sync.notice ? <p className="error">{sync.notice}</p> : null}
 
-      <div className="meta">
-        {summary ? (
-          <>
-            <span>
-              Majority{" "}
-              <b>{summary.majority ?? "none"}</b>
-            </span>
-            <span>
-              Spread{" "}
-              <b>
-                {summary.min}–{summary.max}
-              </b>
-            </span>
-          </>
-        ) : (
-          <span>
-            {votedCount}/{sync.room?.players.length ?? 0} voted
-            {sync.status === "online" ? " · live" : ""}
-          </span>
-        )}
-      </div>
+      {summary ? (
+        <section className="result" aria-live="polite">
+          <div className="final">
+            <p className="final-label">Final estimate</p>
+            <p className={summary.majority != null ? "final-value popular" : "final-value"}>
+              {summary.majority ?? "—"}
+            </p>
+            <p className="final-hint">
+              {summary.majority != null
+                ? "Most common vote"
+                : "No majority. Discuss, then vote again."}
+            </p>
+            {summary.spread && summary.spread.min !== summary.spread.max ? (
+              <p className="final-range">
+                Range {summary.spread.min}–{summary.spread.max}
+              </p>
+            ) : null}
+          </div>
+          {summary.counts.length > 0 ? (
+            <ul className="counts">
+              {summary.counts.map((item) => {
+                const popular = item.value === String(summary.majority);
+                return (
+                  <li className={popular ? "count popular" : "count"} key={item.value}>
+                    <span className="count-card">{item.value}</span>
+                    <span className="count-n">
+                      {item.count} {item.count === 1 ? "vote" : "votes"}
+                    </span>
+                  </li>
+                );
+              })}
+            </ul>
+          ) : null}
+        </section>
+      ) : (
+        <p className="meta">
+          {votedCount}/{playerCount} voted
+          {everyoneVoted ? " · everyone is in — press Show votes" : ""}
+        </p>
+      )}
 
       <div className="players">
         {(sync.room?.players ?? []).map((player) => (
@@ -160,13 +203,16 @@ export default function Room() {
       </div>
 
       <div className="actions">
-        <button
-          type="button"
-          onClick={() => sync.reveal()}
-          disabled={!sync.room || sync.room.revealed || votedCount === 0}
-        >
-          Reveal
-        </button>
+        {sync.room?.revealed ? null : (
+          <button
+            type="button"
+            className="show-votes"
+            onClick={() => sync.reveal()}
+            disabled={!sync.room || votedCount === 0}
+          >
+            Show votes
+          </button>
+        )}
         <button type="button" className="secondary" onClick={() => sync.newRound()}>
           Next round
         </button>
